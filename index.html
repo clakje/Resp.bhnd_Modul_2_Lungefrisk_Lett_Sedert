@@ -212,12 +212,12 @@
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
                     <div style="flex: 1; min-width: 280px;">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
-                            <span style="font-size: 20px;">😴</span>
-                            <span style="font-size: 16px; font-weight: 700; color: #38bdf8;">Scenario: Lungefrisk, lett sedert</span>
-                            <span style="background: rgba(34, 197, 94, 0.2); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.4); padding: 2px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 600;">✅ Stabil referanse</span>
-                            <span style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 2px 8px; border-radius: 4px; font-size: 11.5px;">Postop laparoskopi</span>
+                            <span id="scenarioStatusIcon" style="font-size: 20px;">😴</span>
+                            <span id="scenarioStatusTitle" style="font-size: 16px; font-weight: 700; color: #38bdf8;">Scenario: Lungefrisk, lett sedert</span>
+                            <span id="scenarioStatusBadge" style="background: rgba(34, 197, 94, 0.2); color: #86efac; border: 1px solid rgba(34, 197, 94, 0.4); padding: 2px 8px; border-radius: 4px; font-size: 11.5px; font-weight: 600;">✅ Stabil referanse</span>
+                            <span id="scenarioSubBadge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); padding: 2px 8px; border-radius: 4px; font-size: 11.5px;">Postop laparoskopi</span>
                         </div>
-                        <div style="font-size: 13px; color: var(--text-muted); line-height: 1.5;">
+                        <div id="scenarioPatientDesc" style="font-size: 13px; color: var(--text-muted); line-height: 1.5; transition: color 0.3s ease;">
                             🧑 <strong>Pasient:</strong> Mann 54 år, 175 cm (PBW 71 kg), 1. postop. døgn. Normale lunger (C 75, R 5). Svakt dempet egenrespirasjon (RR 11, Pmus 3). Beskjeden trykkstøtte (ΔP 5 cmH₂O) gir adekvat tidalvolum (~545 ml, 7,7 ml/kg).
                         </div>
                     </div>

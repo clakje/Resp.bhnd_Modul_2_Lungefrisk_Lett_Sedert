@@ -275,6 +275,41 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const btnTestHighSupport = document.getElementById('btnTestHighSupport');
+    const scenarioPatientDesc = document.getElementById('scenarioPatientDesc');
+    const scenarioStatusBadge = document.getElementById('scenarioStatusBadge');
+    const scenarioStatusIcon = document.getElementById('scenarioStatusIcon');
+
+    const SCENARIO_TEXTS = {
+        baseline: '🧑 <strong>Pasient:</strong> Mann 54 år, 175 cm (PBW 71 kg), 1. postop. døgn. Normale lunger (C 75, R 5). Svakt dempet egenrespirasjon (RR 11, Pmus 3). Beskjeden trykkstøtte (ΔP 5 cmH₂O) gir adekvat tidalvolum (~545 ml, 7,7 ml/kg).',
+        overventilation: '⚠️ <strong>Pasient:</strong> Mann 54 år, 175 cm (PBW 71 kg). Trykkstøtten er nå økt (IPAP 16), noe som gir et uhensiktsmessig høyt tidalvolum (nærmere 9,6 ml/kg). Over tid vil dette høye minuttvolumet vaske ut pasientens CO₂, noe som vil føre til at pasientens egen respirasjonsdrive flater ut og resulterer i sentrale apnéer.'
+    };
+
+    function updateScenarioBarState(isOverventilated) {
+        if (!scenarioPatientDesc) return;
+        if (isOverventilated) {
+            scenarioPatientDesc.innerHTML = SCENARIO_TEXTS.overventilation;
+            if (scenarioStatusBadge) {
+                scenarioStatusBadge.innerHTML = '⚠️ Overventilering (IPAP 16)';
+                scenarioStatusBadge.style.background = 'rgba(239, 68, 68, 0.2)';
+                scenarioStatusBadge.style.color = '#fca5a5';
+                scenarioStatusBadge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+            }
+            if (scenarioStatusIcon) {
+                scenarioStatusIcon.textContent = '⚠️';
+            }
+        } else {
+            scenarioPatientDesc.innerHTML = SCENARIO_TEXTS.baseline;
+            if (scenarioStatusBadge) {
+                scenarioStatusBadge.innerHTML = '✅ Stabil referanse';
+                scenarioStatusBadge.style.background = 'rgba(34, 197, 94, 0.2)';
+                scenarioStatusBadge.style.color = '#86efac';
+                scenarioStatusBadge.style.borderColor = 'rgba(34, 197, 94, 0.4)';
+            }
+            if (scenarioStatusIcon) {
+                scenarioStatusIcon.textContent = '😴';
+            }
+        }
+    }
 
 // Innsiktspanel
     const insightTau = document.getElementById('insightTau');
@@ -1319,6 +1354,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast('🔧 <strong>Du har endret en innstilling.</strong> Fasiten gjaldt scenariets utgangspunkt og er slått av. Les kurvene på nytt.');
             }
 
+            if (slider === sliders.ipap || slider === sliders.epap) {
+                const ipapVal = parseFloat(sliders.ipap ? sliders.ipap.value : 10);
+                const epapVal = parseFloat(sliders.epap ? sliders.epap.value : 5);
+                const isOver = (ipapVal === 16 && epapVal === 5);
+                const isBase = (ipapVal === 10 && epapVal === 5);
+
+                if (btnTestHighSupport) btnTestHighSupport.classList.toggle('active', isOver);
+                if (scenarioBtns.mildlySedated) scenarioBtns.mildlySedated.classList.toggle('active', isBase);
+
+                if (isOver || (ipapVal - epapVal) > 10) {
+                    updateScenarioBarState(true);
+                } else {
+                    updateScenarioBarState(false);
+                }
+            }
+
             updateSimulatorFromUI();
             updateInsights();
         });
@@ -1670,6 +1721,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        if (scenarioKey === 'mildlySedated') {
+            updateScenarioBarState(false);
+        }
+
         updateSimulatorFromUI();
     }
 
@@ -1692,6 +1747,7 @@ document.addEventListener('DOMContentLoaded', () => {
             isScenarioActive = false;
             renderer.setAnnotations([]);
             setAnnotationButtonState(false);
+            updateScenarioBarState(true);
             updateSimulatorFromUI();
             updateInsights();
             showToast('⚠️ <strong>Overventilering testet:</strong> IPAP økt til 16 (ΔP 11 cmH₂O). Se hvordan tidalvolumet skyter i været (> 850 ml) i friske lunger!');
@@ -1985,21 +2041,39 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>`;
             }
 
-            insightText.innerHTML = `
-                ${evalHtml}
-                <div style="margin-bottom: 8px; padding: 7px 10px; background: rgba(56, 189, 248, 0.10); border-left: 3px solid #38bdf8; border-radius: 4px; font-size: 12px; line-height: 1.45;">
-                    🧑 <strong>Pasient:</strong> Mann 54 år, 175 cm (PBW 71 kg). Normale lunger (C 75 ml/cmH₂O, R 5 cmH₂O/(L/s)). Svakt dempet drive (RR 11, Pmus 3).
-                </div>
-                <div style="margin-bottom: 6px; font-size: 12px;">
-                    👁️ <strong>Hva du ser:</strong> Rolig, stabilt pustemønster med lang ekspirasjonstid (I:E ca. 1:4,4). Flow når null lenge før neste pust (PEEPi = 0).
-                </div>
-                <div style="margin-bottom: 6px; font-size: 12px;">
-                    🔍 <strong>Hvorfor det skjer:</strong> Friske lunger med normal ettergivelighet tømmes raskt (tidskonstant τ = 0,38 s) og trenger bare beskjeden trykkstøtte for å nå målet.
-                </div>
-                <div style="margin-bottom: 6px; font-size: 12px;">
-                    🛠️ <strong>Hva du gjør:</strong> Behold moderat trykkstøtte (ΔP 4–6 cmH₂O). Unngå for høyt IPAP som gir hyperventilering.
-                </div>
-            `;
+            if (currentDeltaP > 10) {
+                insightText.innerHTML = `
+                    ${evalHtml}
+                    <div style="margin-bottom: 8px; padding: 7px 10px; background: rgba(239, 68, 68, 0.10); border-left: 3px solid #ef4444; border-radius: 4px; font-size: 12px; line-height: 1.45;">
+                        ⚠️ <strong>Pasient:</strong> Mann 54 år, 175 cm (PBW 71 kg). Trykkstøtten er nå økt (IPAP ${simulator.settings.ipap}), noe som gir et uhensiktsmessig høyt tidalvolum (~${vtPerKg} ml/kg). Over tid vil dette høye minuttvolumet vaske ut pasientens CO₂, noe som vil føre til at pasientens egen respirasjonsdrive flater ut og resulterer i sentrale apnéer.
+                    </div>
+                    <div style="margin-bottom: 6px; font-size: 12px;">
+                        👁️ <strong>Hva du ser:</strong> Massive tidalvolum (~${currentVt} ml / ${vtPerKg} ml/kg PBW) og markant inspiratorisk flowtopp. Pasienten overventileres kraftig på grunn av normal lungeettergivelighet.
+                    </div>
+                    <div style="margin-bottom: 6px; font-size: 12px;">
+                        🔍 <strong>Hvorfor det skjer:</strong> Normale lunger har høy compliance (75 ml/cmH₂O). En trykkstøtte på ${currentDeltaP} cmH₂O blåser inn altfor store volumer for en sedert pasient med lav metabolsk etterspørsel.
+                    </div>
+                    <div style="margin-bottom: 6px; font-size: 12px;">
+                        🛠️ <strong>Hva du gjør:</strong> Reduser IPAP tilbake til fysiologisk nivå (f.eks. IPAP 10, ΔP 5 cmH₂O). Hyperventilering vasker ut CO₂ og slår ut pasientens egen respirasjonsdrive.
+                    </div>
+                `;
+            } else {
+                insightText.innerHTML = `
+                    ${evalHtml}
+                    <div style="margin-bottom: 8px; padding: 7px 10px; background: rgba(56, 189, 248, 0.10); border-left: 3px solid #38bdf8; border-radius: 4px; font-size: 12px; line-height: 1.45;">
+                        🧑 <strong>Pasient:</strong> Mann 54 år, 175 cm (PBW 71 kg). Normale lunger (C 75 ml/cmH₂O, R 5 cmH₂O/(L/s)). Svakt dempet drive (RR 11, Pmus 3).
+                    </div>
+                    <div style="margin-bottom: 6px; font-size: 12px;">
+                        👁️ <strong>Hva du ser:</strong> Rolig, stabilt pustemønster med lang ekspirasjonstid (I:E ca. 1:4,4). Flow når null lenge før neste pust (PEEPi = 0).
+                    </div>
+                    <div style="margin-bottom: 6px; font-size: 12px;">
+                        🔍 <strong>Hvorfor det skjer:</strong> Friske lunger med normal ettergivelighet tømmes raskt (tidskonstant τ = 0,38 s) og trenger bare beskjeden trykkstøtte for å nå målet.
+                    </div>
+                    <div style="margin-bottom: 6px; font-size: 12px;">
+                        🛠️ <strong>Hva du gjør:</strong> Behold moderat trykkstøtte (ΔP 4–6 cmH₂O). Unngå for høyt IPAP som gir hyperventilering.
+                    </div>
+                `;
+            }
         }
     }
 
